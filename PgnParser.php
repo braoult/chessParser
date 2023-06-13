@@ -64,24 +64,39 @@ class PgnParser
     private function cleanPgn()
     {
         $c = $this->pgnContent;
-        $c = preg_replace('/"\]\s{0,10}\[/s', "\"]\n[", $c);
-        $c = preg_replace('/"\]\s{0,10}([\.0-9]|{)/s', "\"]\n\n$1", $c);
+        /* remove CR and TAB */
+        $c = preg_replace("/[\t\r]/s", "", $c);
 
-        $c = preg_replace("/{\s{0,6}\[%emt[^\}]*?\}/", "", $c);
+        /* set one '\n' between tags. Will also add a newline in comments like:
+         * { [%emt ...] [%clk ...] }
+         */
+        $c = preg_replace('/"\]\s*\[/s', "\"]\n[", $c);
 
+        /* set '\n\n' between tags and movetext section */
+        $c = preg_replace('/"\]\s*([\.0-9]|{)/s', "\"]\n\n$1", $c);
+
+        /* separate first comment of variation
+         * NOTE: I am unsure a sub-variation can start with a comment.
+         */
         $c = str_replace("({", "( {", $c);
-        $c = preg_replace("/{([^\[]*?)\[([^}]?)}/s", '{$1-SB-$2}', $c);
-        $c = preg_replace("/\r/s", "", $c);
-        $c = preg_replace("/\t/s", "", $c);
-        $c = preg_replace("/\]\s+\[/s", "]\n[", $c);
+
+        /* USELESS? remove space before [ */
         $c = str_replace(" [", "[", $c);
+
+        /* Try to set '\n\n' between non tag line and tag line (between two games)
+         * DESTRUCTIVE, as it will destroy files with :
+         * ... { or 1.e4
+         * [%action ...] }
+         * This needs to be handled in parser, not by regex.
+         */
         $c = preg_replace("/([^\]])(\n+)\[/si", "$1\n\n[", $c);
+
+        /* max 2 consecutive '\n */
         $c = preg_replace("/\n{3,}/s", "\n\n", $c);
-        $c = str_replace("-SB-", "[", $c);
+
+        /* replace 0 in castle with O */
         $c = str_replace("0-0-0", "O-O-O", $c);
         $c = str_replace("0-0", "O-O", $c);
-
-        $c = preg_replace('/^([^\[])*?\[/', '[', $c);
 
         return $c;
     }

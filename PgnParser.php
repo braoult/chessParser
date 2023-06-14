@@ -64,39 +64,50 @@ class PgnParser
     private function cleanPgn()
     {
         $c = $this->pgnContent;
-        /* remove CR and TAB */
-        $c = preg_replace("/[\t\r]/s", "", $c);
-
-        /* set one '\n' between tags. Will also add a newline in comments like:
-         * { [%emt ...] [%clk ...] }
-         */
-        $c = preg_replace('/"\]\s*\[/s', "\"]\n[", $c);
-
-        /* set '\n\n' between tags and movetext section */
-        $c = preg_replace('/"\]\s*([\.0-9]|{)/s', "\"]\n\n$1", $c);
+        /* replace CR and TAB with space */
+        $c = preg_replace("/[\t\r]/s", " ", $c);
 
         /* separate first comment of variation
          * NOTE: I am unsure a sub-variation can start with a comment.
          */
         $c = str_replace("({", "( {", $c);
 
-        /* USELESS? remove space before [ */
-        $c = str_replace(" [", "[", $c);
-
-        /* Try to set '\n\n' between non tag line and tag line (between two games)
-         * DESTRUCTIVE, as it will destroy files with :
-         * ... { or 1.e4
-         * [%action ...] }
-         * This needs to be handled in parser, not by regex.
-         */
-        $c = preg_replace("/([^\]])(\n+)\[/si", "$1\n\n[", $c);
-
-        /* max 2 consecutive '\n */
-        $c = preg_replace("/\n{3,}/s", "\n\n", $c);
-
         /* replace 0 in castle with O */
         $c = str_replace("0-0-0", "O-O-O", $c);
         $c = str_replace("0-0", "O-O", $c);
+
+        /* replace '[' and ']' between '{' and '}' with '//--SB--//' and '//--EB--//'
+         * See: https://stackoverflow.com/a/28169869/3079831
+         */
+        $c = preg_replace('/\[(?!(?:{[^}]*}|[^}])*$)/', "//--SB--//", $c);
+        $c = preg_replace('/\](?!(?:{[^}]*}|[^}])*$)/', "//--EB--//", $c);
+
+        /* set one '\n' between tags.
+         * This is possible because brackets within comments are protected above
+         */
+        $c = preg_replace('/"\]\s*\[/s', "\"]\n[", $c);
+
+        /* set '\n\n' between tags and movetext section
+         * This is possible because brackets within comments are protected above
+         */
+        $c = preg_replace('/"\]\s*([\.0-9]|{)/s', "\"]\n\n$1", $c);
+
+        /* remove space before '['
+         * This is possible because brackets within comments are protected above
+         */
+        $c = str_replace(" +[", "[", $c);
+
+        /* set '\n\n' between non tag line and tag line (between two games)
+         * This is possible because brackets within comments are protected above
+         */
+        $c = preg_replace("/([^\]])(\n+)\[/si", "$1\n\n[", $c);
+
+        /* revert brackets within movetext comments*/
+        $c = str_replace("//--SB--//", "[", $c);
+        $c = str_replace("//--EB--//", "]", $c);
+
+        /* max 2 consecutive '\n */
+        $c = preg_replace("/\n{3,}/s", "\n\n", $c);
 
         return $c;
     }

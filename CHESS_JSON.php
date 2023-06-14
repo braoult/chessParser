@@ -15,13 +15,13 @@ class CHESS_JSON {
     const MOVE_CAPTURE = 'capture';
     const MOVE_PROMOTE_TO = 'promoteTo';
     const MOVE_CASTLE = 'castle';
-    const MOVE_PARSED = 'castle';
+    const MOVE_PARSED = 'parsed';
 
     const GAME_METADATA = 'metadata';
     const GAME_EVENT = 'event';
     const GAME_WHITE = 'white';
     const GAME_BLACK = 'black';
-    const GAME_ECO = 'black';
+    const GAME_ECO = 'eco';
 
     const PGN_KEY_ACTION_ARROW = "ar";
     const PGN_KEY_ACTION_HIGHLIGHT = "sq";

@@ -64,23 +64,20 @@ class PgnParser
     private function cleanPgn()
     {
         $c = $this->pgnContent;
+
         /* replace CR and TAB with space */
         $c = preg_replace("/[\t\r]/s", " ", $c);
 
-        /* separate first comment of variation
-         * NOTE: I am unsure a sub-variation can start with a comment.
-         */
+        /* separate first comment of variation */
         $c = str_replace("({", "( {", $c);
 
         /* replace 0 in castle with O */
         $c = str_replace("0-0-0", "O-O-O", $c);
         $c = str_replace("0-0", "O-O", $c);
 
-        /* replace '[' and ']' between '{' and '}' with '//--SB--//' and '//--EB--//'
-         * See: https://stackoverflow.com/a/28169869/3079831
+        /* replace '[' between '{' and '}' with '//--SB--//'
          */
-        $c = preg_replace('/\[(?!(?:{[^}]*}|[^}])*$)/', "//--SB--//", $c);
-        $c = preg_replace('/\](?!(?:{[^}]*}|[^}])*$)/', "//--EB--//", $c);
+        $c = preg_replace('/(?:\G(?!\A)|\{)[^}[]*\K\[/', "//--SB--//", $c);
 
         /* set one '\n' between tags.
          * This is possible because brackets within comments are protected above
@@ -102,9 +99,8 @@ class PgnParser
          */
         $c = preg_replace("/([^\]])(\n+)\[/si", "$1\n\n[", $c);
 
-        /* revert brackets within movetext comments*/
+        /* revert brackets within movetext comments */
         $c = str_replace("//--SB--//", "[", $c);
-        $c = str_replace("//--EB--//", "]", $c);
 
         /* max 2 consecutive '\n */
         $c = preg_replace("/\n{3,}/s", "\n\n", $c);

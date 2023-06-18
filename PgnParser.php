@@ -75,9 +75,21 @@ class PgnParser
         $c = str_replace("0-0-0", "O-O-O", $c);
         $c = str_replace("0-0", "O-O", $c);
 
+        /* basic trimming:
+         * - remove initial blanks
+         * - keep only one space
+         * - trim lines
+         * - max 2 consecutive '\n'
+         */
+        $c = preg_replace("/^\s+([^\s])/", "$1", $c);
+        $c = preg_replace("/ +/", " ", $c);
+        $c = preg_replace("/\s*\n\s*/", "\n", $c);
+        $c = preg_replace("/\n{3,}/s", "\n\n", $c);
+
         /* replace '[' between '{' and '}' with '//--SB--//'
          */
-        $c = preg_replace('/(?:\G(?!\A)|\{)[^}[]*\K\[/', "//--SB--//", $c);
+        $c = preg_replace('/(?:\G(?!\A)|\{)[^\}\[]*\K\[/', "//--SB--//", $c);
+        $c = preg_replace('/(?:\G(?!\A)|\{)[^\}\]]*\K\]/', "//--SE--//", $c);
 
         /* set one '\n' between tags.
          * This is possible because brackets within comments are protected above
@@ -85,25 +97,15 @@ class PgnParser
         $c = preg_replace('/"\]\s*\[/s', "\"]\n[", $c);
 
         /* set '\n\n' between tags and movetext section
+         * set '\n\n' between non tag line and tag line (between two games)
          * This is possible because brackets within comments are protected above
          */
         $c = preg_replace('/"\]\s*([\.0-9]|{)/s', "\"]\n\n$1", $c);
-
-        /* remove space before '['
-         * This is possible because brackets within comments are protected above
-         */
-        $c = str_replace(" +[", "[", $c);
-
-        /* set '\n\n' between non tag line and tag line (between two games)
-         * This is possible because brackets within comments are protected above
-         */
-        $c = preg_replace("/([^\]])(\n+)\[/si", "$1\n\n[", $c);
+        $c = preg_replace("/([^\]])\n+\[/", "$1\n\n[", $c);
 
         /* revert brackets within movetext comments */
         $c = str_replace("//--SB--//", "[", $c);
-
-        /* max 2 consecutive '\n */
-        $c = preg_replace("/\n{3,}/s", "\n\n", $c);
+        $c = str_replace("//--SE--//", "]", $c);
 
         return $c;
     }
@@ -123,6 +125,8 @@ class PgnParser
         $ret = array();
         $content = "\n\n" . $pgn;
         $games = preg_split("/\n\n\[/s", $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        //file_put_contents("/tmp/parsed.pgn", $content);
 
         for ($i = 1, $count = count($games); $i < $count; $i++) {
             $gameContent = trim("[" . $games[$i]);

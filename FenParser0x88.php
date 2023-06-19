@@ -188,7 +188,7 @@ class FenParser0x88
     {
         $this->setFen($fen);
         if (!isset($move['from'])) {
-            $fromAndTo = $this->getFromAndToByNotation($move[CHESS_JSON::MOVE_NOTATION]);
+            $fromAndTo = $this->getFromAndToByNotation($move['m']);
             $move['from'] = $fromAndTo['from'];
             $move['to'] = $fromAndTo['to'];
 
@@ -556,7 +556,7 @@ class FenParser0x88
                             }
                         }
                     }
-                    
+
                     break;
                 // Sliding pieces
                 case 0x05:
@@ -1206,9 +1206,9 @@ class FenParser0x88
         $ret = array('promoteTo' => $this->getPromoteByNotation($notation));
         $color = $this->getColor();
 
-        $offset = 0;
+        $offset = 0;                              /* a1 */
         if ($color === 'black') {
-            $offset = 112;
+            $offset = 112;                        /* a8 */
         }
 
         $foundPieces = array();
@@ -1235,7 +1235,7 @@ class FenParser0x88
 
             $ret['to'] = $this->getToSquareByNotation($notation);
             switch ($pieceType) {
-                case 0x01:
+                case 0x01:                        // pawn
                 case 0x09:
                     if ($color === 'black') {
                         $offsets = $capture ? array(15, 17) : array(16);
@@ -1256,23 +1256,21 @@ class FenParser0x88
                         }
                     }
                     break;
-                case 0x03:
+                case 0x03:                        // king
                 case 0x0B:
-
-                    if ($notation === 'O-O') {
-                        $foundPieces[] = ($offset + 4);
-                        $ret['to'] = $offset + 6;
-                    } else if ($notation === 'O-O-O') {
+                    if (!strncmp($notation, 'O-O-O', 5)) {
                         $foundPieces[] = ($offset + 4);
                         $ret['to'] = $offset + 2;
+                    } else if (!strncmp($notation, 'O-O', 3)) {
+                        $foundPieces[] = ($offset + 4);
+                        $ret['to'] = $offset + 6;
                     } else {
                         $k = $this->getKing($color);
                         $foundPieces[] = $k['s'];
                     }
                     break;
-                case 0x02:
+                case 0x02:                        // knight
                 case 0x0A:
-
                     $pattern = Board0x88Config::$movePatterns[$pieceType];
                     for ($i = 0, $len = count($pattern); $i < $len; $i++) {
                         $sq = $ret['to'] + $pattern[$i];
@@ -1411,7 +1409,7 @@ class FenParser0x88
 
     function getPieceTypeByNotation($notation, $color = null)
     {
-        if ($notation === 'O-O-O' || $notation === 'O-O') {
+        if (!strncmp($notation, 'O-O', 3)) {
             $pieceType = 'K';
         } else {
             $token = substr($notation, 0, 1);
